@@ -110,6 +110,14 @@
 <body>
 
 <!-- 🔥 MASTER FLAG AT TOP -->
+ <p><strong>Solved:</strong> {{ solved_count }} / 3</p>
+
+<form method="POST" style="margin-bottom:20px;">
+    {% csrf_token %}
+    <button type="submit" name="reset" style="background:red;">
+        Reset Progress
+    </button>
+</form>
 {% if result %}
 {% if master_flag %}
     <div class="success" style="margin-bottom:20px; font-size:22px;">

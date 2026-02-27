@@ -1,7 +1,7 @@
 import subprocess
 import tempfile
 from django.conf import settings
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from .models import Challenge
 from django.views.decorators.cache import never_cache
 
@@ -16,11 +16,20 @@ def challenge_view(request, id):
     prev_challenge = Challenge.objects.filter(id__lt=challenge.id).order_by('-id').first()
     next_challenge = Challenge.objects.filter(id__gt=challenge.id).order_by('id').first()
 
-    # Initialize solved list in session
-    if "solved" not in request.session:
-        request.session["solved"] = []
+    # Initialize session variables
+    if "solved_list" not in request.session:
+        request.session["solved_list"] = []
 
-    if request.method == "POST":
+    if "solved_count" not in request.session:
+        request.session["solved_count"] = 0
+
+    # 🔄 RESET BUTTON
+    if request.method == "POST" and "reset" in request.POST:
+        request.session["solved_list"] = []
+        request.session["solved_count"] = 0
+        return redirect("challenge", id=1)
+
+    if request.method == "POST" and "code" in request.POST:
         user_code = request.POST.get("code")
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".py") as temp:
@@ -38,21 +47,19 @@ def challenge_view(request, id):
             output = result.stdout.strip()
             expected = challenge.expected_output.strip()
 
-            output_lines = [line.strip() for line in output.splitlines()]
-            expected_lines = [line.strip() for line in expected.splitlines()]
-
-            if output_lines == expected_lines:
+            if output == expected:
                 result_message = "Correct! ✅"
 
-                # Add challenge to solved list
-                solved = request.session["solved"]
-                if challenge.id not in solved:
-                    solved.append(challenge.id)
-                    request.session["solved"] = solved
+                solved_list = request.session["solved_list"]
 
-                # Check if ALL challenges solved
-                total = Challenge.objects.count()
-                if len(solved) == total:
+                # Add only if not already solved
+                if challenge.id not in solved_list:
+                    solved_list.append(challenge.id)
+                    request.session["solved_list"] = solved_list
+                    request.session["solved_count"] = len(solved_list)
+
+                # 🎉 MASTER FLAG CONDITION
+                if request.session["solved_count"] == 3:
                     master_flag = settings.MASTER_FLAG
 
             else:
@@ -69,6 +76,7 @@ def challenge_view(request, id):
         "prev_challenge": prev_challenge,
         "next_challenge": next_challenge,
         "master_flag": master_flag,
+        "solved_count": request.session["solved_count"],
     })
 
 
