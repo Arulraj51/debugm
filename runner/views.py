@@ -13,6 +13,9 @@ def challenge_view(request, id):
     prev_challenge = Challenge.objects.filter(id__lt=challenge.id).order_by('-id').first()
     next_challenge = Challenge.objects.filter(id__gt=challenge.id).order_by('id').first()
 
+    # 🔥 Get solved challenges from session
+    solved_list = request.session.get("solved_challenges", [])
+
     if request.method == "POST":
         user_code = request.POST.get("code")
 
@@ -37,10 +40,10 @@ def challenge_view(request, id):
             if output_lines == expected_lines:
                 result_message = "Correct! ✅"
 
-                # 🔥 Show master flag only if this is last challenge
-                last_challenge = Challenge.objects.order_by('-id').first()
-                if challenge == last_challenge:
-                    master_flag = settings.MASTER_FLAG
+                # ✅ Save solved challenge in session
+                if challenge.id not in solved_list:
+                    solved_list.append(challenge.id)
+                    request.session["solved_challenges"] = solved_list
 
             else:
                 result_message = "Wrong answer. Try again!"
@@ -49,6 +52,12 @@ def challenge_view(request, id):
             result_message = "Time limit exceeded!"
         except Exception as e:
             result_message = f"Error: {str(e)}"
+
+    # ✅ Check if ALL challenges solved
+    total_challenges = Challenge.objects.count()
+
+    if total_challenges > 0 and len(solved_list) == total_challenges:
+        master_flag = settings.MASTER_FLAG
 
     return render(request, "runner/challenge.html", {
         "challenge": challenge,
