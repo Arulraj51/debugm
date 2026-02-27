@@ -3,8 +3,8 @@ import tempfile
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Challenge
-
-
+from django.views.decorators.cache import never_cache
+@never_cache
 def challenge_view(request, id):
     challenge = get_object_or_404(Challenge, id=id)
     master_flag = None
