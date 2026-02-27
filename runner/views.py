@@ -1,23 +1,22 @@
 import subprocess
 import tempfile
 from django.conf import settings
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from .models import Challenge
 
 
 def challenge_view(request, id):
     challenge = get_object_or_404(Challenge, id=id)
-    result_message = ""
     master_flag = None
 
     prev_challenge = Challenge.objects.filter(id__lt=challenge.id).order_by('-id').first()
     next_challenge = Challenge.objects.filter(id__gt=challenge.id).order_by('id').first()
 
-    # 🔥 Get solved challenges from session
     solved_list = request.session.get("solved_challenges", [])
 
     if request.method == "POST":
         user_code = request.POST.get("code")
+        result_message = ""
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".py") as temp:
             temp.write(user_code.encode())
@@ -40,11 +39,9 @@ def challenge_view(request, id):
             if output_lines == expected_lines:
                 result_message = "Correct! ✅"
 
-                # ✅ Save solved challenge in session
                 if challenge.id not in solved_list:
                     solved_list.append(challenge.id)
                     request.session["solved_challenges"] = solved_list
-
             else:
                 result_message = "Wrong answer. Try again!"
 
@@ -53,9 +50,16 @@ def challenge_view(request, id):
         except Exception as e:
             result_message = f"Error: {str(e)}"
 
-    # ✅ Check if ALL challenges solved
-    total_challenges = Challenge.objects.count()
+        # ✅ Store result temporarily in session
+        request.session["result_message"] = result_message
 
+        # 🔥 Redirect to same page (this clears POST on refresh)
+        return redirect("challenge", id=challenge.id)
+
+    # GET request
+    result_message = request.session.pop("result_message", "")
+
+    total_challenges = Challenge.objects.count()
     if total_challenges > 0 and len(solved_list) == total_challenges:
         master_flag = settings.MASTER_FLAG
 
