@@ -40,8 +40,8 @@ def challenge_view(request, id):
                 timeout=3
             )
 
-            output = result.stdout.strip()
-            expected = challenge.expected_output.strip()
+            output = result.stdout.strip().splitlines()
+            expected = challenge.expected_output.strip().splitlines()
 
             if output == expected:
                 result_message = "Correct! ✅"
@@ -55,7 +55,7 @@ def challenge_view(request, id):
                     request.session["solved_count"] = len(solved_list)
 
                 # 🎉 MASTER FLAG CONDITION
-                if request.session["solved_count"] == 3:
+                if request.session["solved_count"] == 5:
                     master_flag = settings.MASTER_FLAG
 
             else:
