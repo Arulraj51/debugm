@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-2vgl-7ug$c$a)^g$mq7rdw-0a!@l3@8)%r999=!_t45m)f1(if'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['.onrender.com']
 MASTER_FLAG = "VYUGAM{parama_padi_da}"
